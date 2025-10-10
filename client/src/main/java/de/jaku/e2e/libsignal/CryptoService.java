@@ -28,6 +28,7 @@ public class CryptoService {
             PreKeyBundle bundle = apiClient.fetchPreKeyBundle(remoteAddress.getName());
             SessionBuilder builder = new SessionBuilder(keyStoreService.getSignalProtocolStore(), remoteAddress);
             builder.process(bundle);
+            keyStoreService.getSessions().add(remoteAddress);
         }
     }
 

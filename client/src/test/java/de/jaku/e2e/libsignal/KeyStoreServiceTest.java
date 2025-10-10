@@ -1,17 +1,16 @@
 package de.jaku.e2e.libsignal;
 
+import de.jaku.e2e.persistence.SignalProtocolStoreRepository;
 import de.jaku.e2e.util.Utils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.signal.libsignal.protocol.InvalidKeyException;
-import org.signal.libsignal.protocol.state.KyberPreKeyRecord;
-import org.signal.libsignal.protocol.state.PreKeyBundle;
-import org.signal.libsignal.protocol.state.PreKeyRecord;
-import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
+import org.signal.libsignal.protocol.state.*;
 import org.signal.libsignal.protocol.state.impl.InMemorySignalProtocolStore;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,11 +19,14 @@ class KeyStoreServiceTest {
 
     private KeyStoreService keyStoreService;
 
+    @MockitoBean
+    private SignalProtocolStoreRepository signalProtocolStoreRepository;
+
     @BeforeEach
     void setUp() {
         try (MockedStatic<Utils> mockedUtils = Mockito.mockStatic(Utils.class)) {
             mockedUtils.when(Utils::generateDeviceId).thenReturn(1);
-            keyStoreService = new KeyStoreService();
+            keyStoreService = new KeyStoreService(signalProtocolStoreRepository);
         }
     }
 
