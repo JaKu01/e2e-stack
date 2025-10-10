@@ -7,8 +7,6 @@ import org.signal.libsignal.protocol.IdentityKeyPair;
 import org.signal.libsignal.protocol.InvalidKeyException;
 import org.signal.libsignal.protocol.SignalProtocolAddress;
 import org.signal.libsignal.protocol.ecc.ECKeyPair;
-import org.signal.libsignal.protocol.kem.KEMKeyPair;
-import org.signal.libsignal.protocol.kem.KEMKeyType;
 import org.signal.libsignal.protocol.state.KyberPreKeyRecord;
 import org.signal.libsignal.protocol.state.PreKeyBundle;
 import org.signal.libsignal.protocol.state.PreKeyRecord;
@@ -18,9 +16,8 @@ import org.signal.libsignal.protocol.util.KeyHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 @Component
+@Getter
 public class KeyStoreService {
 
     @Value("${user.name}")
@@ -32,10 +29,8 @@ public class KeyStoreService {
 
     private final int deviceId;
 
-    @Getter
     private final InMemorySignalProtocolStore signalProtocolStore;
 
-    @Getter
     private SignalProtocolAddress address;
 
     private PreKeyBundle preKeyBundle;
@@ -57,15 +52,15 @@ public class KeyStoreService {
             return preKeyBundle;
         }
 
-        int nextPreKeyId = getNextPreKeyId();
-        int nextSignedPreKeyId = getNextSignedPreKeyId();
-        int nextKyberPreSignedKey = getNextKyberPreKeyId();
+        int nextPreKeyId = Utils.getNextPreKeyId(signalProtocolStore);
+        int nextSignedPreKeyId = Utils.getNextSignedPreKeyId(signalProtocolStore);
+        int nextKyberPreSignedKey = Utils.getNextKyberPreKeyId(signalProtocolStore);
 
         ECKeyPair preKey = ECKeyPair.generate();
         PreKeyRecord preKeyRecord = new PreKeyRecord(nextPreKeyId, preKey);
 
-        SignedPreKeyRecord signedPreKey = generateSignedPreKey(nextSignedPreKeyId);
-        KyberPreKeyRecord kyberPreKeyRecord = generateKyberPreKey(nextKyberPreSignedKey);
+        SignedPreKeyRecord signedPreKey = Utils.generateSignedPreKey(nextSignedPreKeyId, identityKeyPair);
+        KyberPreKeyRecord kyberPreKeyRecord = Utils.generateKyberPreKey(nextKyberPreSignedKey, identityKeyPair);
 
         signalProtocolStore.storePreKey(preKeyRecord.getId(), preKeyRecord);
         signalProtocolStore.storeSignedPreKey(signedPreKey.getId(), signedPreKey);
@@ -84,43 +79,5 @@ public class KeyStoreService {
                 kyberPreKeyRecord.getKeyPair().getPublicKey(),
                 kyberPreKeyRecord.getSignature());
         return preKeyBundle;
-    }
-
-    private SignedPreKeyRecord generateSignedPreKey(int signedPreKeyId) {
-        ECKeyPair keyPair = ECKeyPair.generate();
-        byte[] signature =
-                identityKeyPair.getPrivateKey().calculateSignature(keyPair.getPublicKey().serialize());
-
-        return new SignedPreKeyRecord(signedPreKeyId, System.currentTimeMillis(), keyPair, signature);
-    }
-
-    private KyberPreKeyRecord generateKyberPreKey(int kyberPreKeyId) {
-        KEMKeyPair keyPair = KEMKeyPair.generate(KEMKeyType.KYBER_1024);
-        byte[] signature =
-                identityKeyPair.getPrivateKey().calculateSignature(keyPair.getPublicKey().serialize());
-
-        return new KyberPreKeyRecord(kyberPreKeyId, System.currentTimeMillis(), keyPair, signature);
-    }
-
-    private int getNextSignedPreKeyId() {
-        return signalProtocolStore.loadSignedPreKeys().stream()
-                .mapToInt(SignedPreKeyRecord::getId)
-                .max()
-                .orElse(0) + 1;
-    }
-
-    private int getNextKyberPreKeyId() {
-        return signalProtocolStore.loadKyberPreKeys().stream()
-                .mapToInt(KyberPreKeyRecord::getId)
-                .max()
-                .orElse(0) + 1;
-    }
-
-    private int getNextPreKeyId() {
-        int randomId = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
-        while (signalProtocolStore.containsPreKey(randomId)) {
-            randomId = ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE);
-        }
-        return randomId;
     }
 }
