@@ -19,6 +19,6 @@ public class KyberPreKeyEntity {
     @Id
     private long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 8192)
     private byte[] serializedKyberPreKey;
 }

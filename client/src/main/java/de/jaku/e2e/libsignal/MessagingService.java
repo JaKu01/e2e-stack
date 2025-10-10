@@ -1,6 +1,7 @@
 package de.jaku.e2e.libsignal;
 
 import de.jaku.e2e.api.ApiClient;
+import de.jaku.e2e.runner.CliRunner;
 import lombok.RequiredArgsConstructor;
 import org.signal.libsignal.protocol.SignalProtocolAddress;
 import org.signal.libsignal.protocol.message.CiphertextMessage;
@@ -21,8 +22,9 @@ public class MessagingService {
         apiClient.sendMessage(remoteAddress, ciphertext.serialize());
     }
 
-    public String receiveMessage(String fromUser, int fromDevice, byte[] encryptedBytes)
+    public String receiveMessage(String fromUser, int fromDevice)
             throws Exception {
+        byte[] encryptedBytes = apiClient.receiveMessage(CliRunner.myName);
         SignalProtocolAddress remoteAddress = new SignalProtocolAddress(fromUser, fromDevice);
         CiphertextMessage ciphertext = new PreKeySignalMessage(encryptedBytes);
         return crypto.decrypt(remoteAddress, ciphertext);

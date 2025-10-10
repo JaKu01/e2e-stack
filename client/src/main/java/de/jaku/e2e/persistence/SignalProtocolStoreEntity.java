@@ -14,6 +14,8 @@ import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
 import org.signal.libsignal.protocol.state.impl.InMemorySignalProtocolStore;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "signal_protocol_store")
@@ -25,7 +27,7 @@ public class SignalProtocolStoreEntity {
     @Id
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 8192)
     byte[] serializedIdentityKey;
 
     @Column(nullable = false)
@@ -34,17 +36,22 @@ public class SignalProtocolStoreEntity {
     @Column(nullable = false)
     int deviceId;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @Column(nullable = false)
     List<SignedPreKeyEntity> signedPreKeys;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @Column(nullable = false)
     List<KyberPreKeyEntity> kyberPreKeys;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @Column(nullable = false)
     List<SessionRecordEntity> sessionRecords;
+
+    public Set<SignalProtocolAddress> getSessions() {
+        return sessionRecords.stream().map(sre ->
+                new SignalProtocolAddress(sre.getName(), sre.getDeviceId())).collect(Collectors.toSet());
+    }
 
     public InMemorySignalProtocolStore toSignalProtocolStore() {
         InMemorySignalProtocolStore signalProtocolStore = new InMemorySignalProtocolStore(
@@ -78,7 +85,6 @@ public class SignalProtocolStoreEntity {
                 throw new RuntimeException(e);
             }
         });
-
         return signalProtocolStore;
     }
 }

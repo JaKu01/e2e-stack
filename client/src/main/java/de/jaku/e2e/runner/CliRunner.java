@@ -5,13 +5,17 @@ import de.jaku.e2e.libsignal.KeyStoreService;
 import de.jaku.e2e.libsignal.MessagingService;
 import lombok.RequiredArgsConstructor;
 import org.signal.libsignal.protocol.state.PreKeyBundle;
-import org.signal.libsignal.protocol.state.impl.InMemorySignalProtocolStore;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+
+import java.util.NoSuchElementException;
+
 
 @Component
 @RequiredArgsConstructor
 public class CliRunner implements CommandLineRunner {
+
+    public static final String myName = "bob";
 
     private  final KeyStoreService keyStoreService;
     private  final ApiClient apiClient;
@@ -20,14 +24,14 @@ public class CliRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        PreKeyBundle myPreKeyBundle;
-
-        if (!apiClient.hasPreKeyBundle("alice")) {
-            myPreKeyBundle = keyStoreService.generatePreKeyBundle();
-            apiClient.uploadPreKeyBundle("alice", myPreKeyBundle);
+        try {
+            apiClient.fetchPreKeyBundle(myName);
+        } catch (NoSuchElementException e) {
+            PreKeyBundle myPreKeyBundle = keyStoreService.generatePreKeyBundle();
+            apiClient.uploadPreKeyBundle(myName, myPreKeyBundle);
         }
 
         messagingService.sendMessage("bob", 1, "Hello world");
-
+        messagingService.receiveMessage("alice", 107);
     }
 }

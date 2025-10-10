@@ -16,10 +16,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class SignedPreKeyEntity {
-
     @Id
     private long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 8192)
     private byte[] serializedSignedPreKey;
 }
