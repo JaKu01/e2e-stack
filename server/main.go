@@ -94,7 +94,7 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /api/messages", func(w http.ResponseWriter, r *http.Request) {
-		name := r.URL.Query().Get("receiver")
+		name := r.URL.Query().Get("name")
 
 		if name == "" {
 			w.WriteHeader(http.StatusBadRequest)
