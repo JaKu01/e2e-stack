@@ -9,6 +9,7 @@ import org.signal.libsignal.protocol.IdentityKeyPair;
 import org.signal.libsignal.protocol.InvalidMessageException;
 import org.signal.libsignal.protocol.SignalProtocolAddress;
 import org.signal.libsignal.protocol.state.KyberPreKeyRecord;
+import org.signal.libsignal.protocol.state.PreKeyRecord;
 import org.signal.libsignal.protocol.state.SessionRecord;
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord;
 import org.signal.libsignal.protocol.state.impl.InMemorySignalProtocolStore;
@@ -48,6 +49,10 @@ public class SignalProtocolStoreEntity {
     @Column(nullable = false)
     List<SessionRecordEntity> sessionRecords;
 
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(nullable = false)
+    List<PreKeyEntity> preKeys;
+
     public Set<SignalProtocolAddress> getSessions() {
         return sessionRecords.stream().map(sre ->
                 new SignalProtocolAddress(sre.getName(), sre.getDeviceId())).collect(Collectors.toSet());
@@ -85,6 +90,15 @@ public class SignalProtocolStoreEntity {
                 throw new RuntimeException(e);
             }
         });
+
+        preKeys.stream().map(preKey -> {
+            try {
+                return new PreKeyRecord(preKey.getSerializedPreKey());
+            } catch (InvalidMessageException e) {
+                throw new RuntimeException(e);
+            }
+        }).forEach(preKeyRecord ->
+                signalProtocolStore.storePreKey(preKeyRecord.getId(), preKeyRecord));
         return signalProtocolStore;
     }
 }

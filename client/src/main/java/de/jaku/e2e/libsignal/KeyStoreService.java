@@ -15,10 +15,7 @@ import org.signal.libsignal.protocol.state.impl.InMemorySignalProtocolStore;
 import org.signal.libsignal.protocol.util.KeyHelper;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @Getter
@@ -38,10 +35,13 @@ public class KeyStoreService {
 
     private PreKeyBundle preKeyBundle;
 
+    private final List<PreKeyRecord> preKeys;
+
 
     public KeyStoreService(SignalProtocolStoreRepository signalProtocolStoreRepository) {
         this.signalProtocolStoreRepository = signalProtocolStoreRepository;
         this.name = CliRunner.myName;
+        this.preKeys = new ArrayList<>();
         retrieveOrCreateFromDatabase();
     }
 
@@ -63,6 +63,8 @@ public class KeyStoreService {
         signalProtocolStore.storePreKey(preKeyRecord.getId(), preKeyRecord);
         signalProtocolStore.storeSignedPreKey(signedPreKey.getId(), signedPreKey);
         signalProtocolStore.storeKyberPreKey(kyberPreKeyRecord.getId(), kyberPreKeyRecord);
+
+        preKeys.add(preKeyRecord);
 
         persistToDatabase();
 
@@ -109,6 +111,10 @@ public class KeyStoreService {
                     .build();
         }).toList();
 
+        List<PreKeyEntity> preKeyEntities = preKeys.stream().map(preKeyRecord -> PreKeyEntity.builder()
+                .serializedPreKey(preKeyRecord.serialize())
+                .build()).toList();
+
         SignalProtocolStoreEntity signalProtocolStoreEntity = SignalProtocolStoreEntity.builder()
                 .name(name)
                 .serializedIdentityKey(signalProtocolStore.getIdentityKeyPair().serialize())
@@ -120,6 +126,7 @@ public class KeyStoreService {
                 .kyberPreKeys(signalProtocolStore.loadKyberPreKeys().stream().map(kyberPreKeyRecord -> KyberPreKeyEntity.builder()
                         .serializedKyberPreKey(kyberPreKeyRecord.serialize()).build()).toList())
                 .sessionRecords(sessionRecordEntities)
+                .preKeys(preKeyEntities)
                 .build();
         signalProtocolStoreRepository.save(signalProtocolStoreEntity);
     }

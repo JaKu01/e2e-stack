@@ -65,7 +65,7 @@ public class ApiClient {
         HttpClient httpClient = HttpClient.newHttpClient();
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8080/api/messages?receiver=" + to.getName()))
+                .uri(new URI("http://localhost:8080/api/messages?name=" + to.getName()))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("{ \"message\": \"" + base64Message +  "\"}"))
                 .build();
